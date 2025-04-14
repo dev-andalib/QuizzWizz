@@ -1,0 +1,10 @@
+# in terminal
+set FLASK_APP=app.py  
+flask run
+
+
+
+# database upgrade in terminal
+flask db init  #only once
+flask db migrate -m "your message"
+flask db upgrade 
