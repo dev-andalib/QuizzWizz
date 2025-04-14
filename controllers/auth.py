@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import  flash,  Blueprint,  redirect, render_template, session, request
 from werkzeug.security import check_password_hash, generate_password_hash
 from extra import check_email, send_error, apology
-
+from models import db, Student, Teacher
 
 
 auth_bp = Blueprint('auth_bp', __name__)
@@ -12,51 +12,50 @@ auth_bp = Blueprint('auth_bp', __name__)
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-
     if request.method == "POST":
-        if not request.form.get("email"):
+        email = request.form.get("email")
+        password = request.form.get("password")
+        role = request.form.get("role")
+
+        
+        if not email:
             flash("Where's the email..?", 'error')
             return render_template("login.html")
-
-        elif not request.form.get("password"):
+        elif not password:
             flash("Where's the password..?", 'error')
             return render_template("login.html")
-
-        elif not request.form.get("role"):
+        elif not role:
             flash("Where's the role..?", 'error')
             return render_template("login.html")
-
-        elif request.form.get("role") not in ["student", "teacher"]:
+        elif role not in ["student", "teacher"]:
             flash("Invalid role.", 'error')
             return render_template("login.html")
 
-        role = request.form.get("role")
-        if role=="student":
-            rows = db.execute("SELECT st_id, st_password FROM student WHERE st_email = ?", (request.form.get("email"),)).fetchall()
-            if len(rows) != 1 or not check_password_hash(rows[0]["st_password"], request.form.get("password")):
-                flash("Invalid user or password.", 'error')
-                return render_template("login.html")
-            
-            session["user_id"] = "ST" + str(rows[0]["st_id"])
-
-            
-        elif role=="teacher":
-            rows = db.execute("SELECT ta_id, ta_password FROM teacher WHERE ta_email = ?", (request.form.get("email"),)).fetchall()
-            if len(rows) != 1 or not check_password_hash(rows[0]["ta_password"], request.form.get("password")):
-                flash("Invalid user or password.", 'error')
-                return render_template("login.html")
-            
-            session["user_id"] = "TA" + str(rows[0]["ta_id"])
-
-        flash("Login successful.!")
-        return redirect("/")
         
+        if role == "student":
+            student = Student.query.filter_by(email=email).first()
+            if not student or not check_password_hash(student.password, password):
+                flash("Invalid user or password.", 'error')
+                return render_template("login.html")
+            
+            session["user_id"] = "ST" + str(student.id)
+
+        elif role == "teacher":
+            teacher = Teacher.query.filter_by(email=email).first()
+            if not teacher or not check_password_hash(teacher.password, password):
+                flash("Invalid user or password.", 'error')
+                return render_template("login.html")
+            
+            session["user_id"] = "TA" + str(teacher.id)
+
+        flash("Login successful!")
+        return redirect("/")
+
     else:
         if session.get("user_id") is None:
             return render_template("login.html")
         else:
             return redirect("/")
-
 
 
 
@@ -71,9 +70,14 @@ def logout():
 
 
 
+def send_error(message):
+    flash(message, 'error')
+    return render_template("signup_teacher.html")
+
 @auth_bp.route("/signup_teacher", methods=["GET", "POST"])
 def signup_t():
-    if request.method=="POST":
+    if request.method == "POST":
+        # Get form data
         username = request.form.get("name")
         email = request.form.get("email")
         password = request.form.get("password")
@@ -81,55 +85,78 @@ def signup_t():
         dob = request.form.get("dob")
         phone = request.form.get("phone")
 
+        # Validation
         if not username:
             return send_error("Must provide name!")
+        elif len(username.strip()) < 4 or len(username.strip()) > 18:
+            return send_error("Name must be between 4 and 18 characters in length")
 
-        elif len(username.strip())<4 or len(username.strip())>18:
-            return send_error("Name must be between 4 and 18 of length")
-        
         if not dob:
             return send_error("Must provide date of birth..!")
-
-        elif not email:
+        
+        if not email:
             return send_error("Must provide email..!")
-
-        elif not check_email(email.strip()):
+        
+        if not check_email(email.strip()):  # Assuming check_email is a custom function for email validation
             return send_error("Invalid Email")
         
-        elif not password:
+        if not password:
             return send_error("Must provide password..!")
         
-        elif len(password)<8 or len(password) >20:
-            return send_error("Invalid Password")
-
-        elif not confirm or confirm != password:
+        if len(password) < 8 or len(password) > 20:
+            return send_error("Password must be between 8 and 20 characters.")
+        
+        if not confirm or confirm != password:
             return send_error("Passwords don't match..!")
-        
-        # Check if user already exists
-        rows = db.execute("SELECT ta_id FROM teacher WHERE ta_email = ?", (email.strip(),)).fetchall()
-        if len(rows)!=0:
+
+        # Check if email already exists
+        teacher = Teacher.query.filter_by(email=email.strip()).first()
+        if teacher:
             return send_error("Email already exists..!")
-        
-        init = (username[randint(0, len(username))] + username[randint(0, len(username))] + username[randint(0, len(username))] + (str(db.execute("SELECT MAX(ta_id) as init From teacher").fetchall()[0]["init"]+20230))).upper()
 
-        date = datetime.now().strftime("%d/%m/%y %H:%M:%S")
-        db.execute("INSERT INTO teacher (ta_name, ta_email, ta_dob, ta_phone, ta_init, ta_password, ta_date_created) VALUES(?, ?, ?, ?, ?, ?, ?)", (username.strip().capitalize(), email.strip(), dob, phone, init, generate_password_hash(password), date))
-        con.commit()
+        # Generate unique teacher initialization value
+        # You can generate the teacher's unique ID based on some pattern as needed
+        max_teacher_id = db.session.query(db.func.max(Teacher.id)).scalar()  # Get the max teacher ID
+        teacher_init = (username[randint(0, len(username)-1)] + username[randint(0, len(username)-1)] + 
+                        username[randint(0, len(username)-1)] + str(max_teacher_id + 20230)).upper()
 
-        return send_error("Registered..!")
+        # Get the current timestamp for account creation
+        date_created = datetime.now().strftime("%d/%m/%y %H:%M:%S")
+
+        # Create new teacher record
+        new_teacher = Teacher(
+            name=username.strip().capitalize(),
+            email=email.strip(),
+            dob=dob,
+            phone=phone,
+            init=teacher_init,
+            password=password,
+            date_created=date_created
+        )
         
+        # Add and commit to the database
+        db.session.add(new_teacher)
+        db.session.commit()
+
+        flash("Registered successfully!", "success")
+        return redirect("/")
+
     else:
-        if session.get("user_id") is None:
+        # If user is already logged in, redirect to home
+        if session.get("user_id"):
+            return redirect("/")
+        else:
             return render_template("signup_teacher.html")
 
-        else:
-            return redirect("/")
 
+def send_error(message):
+    flash(message, 'error')
+    return render_template("signup_student.html")
 
 @auth_bp.route("/signup_student", methods=["GET", "POST"])
 def signup_s():
-    if request.method=="POST":
-        # Validate the user data
+    if request.method == "POST":
+        # Get form data
         username = request.form.get("name")
         email = request.form.get("email")
         password = request.form.get("password")
@@ -138,53 +165,71 @@ def signup_s():
         inst = request.form.get("institute")
         phone = request.form.get("phone")
 
+        # Validation
         if not username:
             return send_error("Must provide name!")
-
-        elif len(username.strip())<4 or len(username.strip())>18:
-            return send_error("Name must be between 4 and 18 of length")
+        elif len(username.strip()) < 4 or len(username.strip()) > 18:
+            return send_error("Name must be between 4 and 18 characters in length")
         
         if not dob:
             return send_error("Must provide date of birth..!")
-
-        elif not email:
+        
+        if not email:
             return send_error("Must provide email..!")
-
-        elif not check_email(email.strip()):
+        
+        if not check_email(email.strip()):  # Assuming check_email is a custom function for email validation
             return send_error("Invalid Email")
         
-        elif not inst:
+        if not inst:
             return send_error("Must provide institute..!")
         
-        elif not 6<len(inst)<30:
+        if not 6 < len(inst) < 30:
             return send_error("Must provide valid institute..!")
-        
-        elif not password:
+
+        if not password:
             return send_error("Must provide password..!")
         
-        elif len(password)<8 or len(password) >20:
-            return send_error("Invalid Password")
-
-        elif not confirm or confirm != password:
+        if len(password) < 8 or len(password) > 20:
+            return send_error("Password must be between 8 and 20 characters.")
+        
+        if not confirm or confirm != password:
             return send_error("Passwords don't match..!")
 
-        # Check if user already exists
-        rows = db.execute("SELECT st_id FROM student WHERE st_email = ?", (email.strip(),)).fetchall()
-        if len(rows)!=0:
+        # Check if email already exists
+        student = Student.query.filter_by(email=email.strip()).first()
+        if student:
             return send_error("Email already exists..!")
-        
-        date = datetime.now().strftime("%d/%m/%y %H:%M:%S")
-        db.execute("INSERT INTO student (st_name, st_email, st_dob, st_phone, st_current_inst, st_password, st_date_created) VALUES(?, ?, ?, ?, ?, ?, ?)", (username.strip().capitalize(), email.strip(), dob, phone, inst.strip().capitalize(), generate_password_hash(password), date))
-        con.commit()
 
-        return send_error("Registered..!")
+        # Create the new student record
+        date_created = datetime.now().strftime("%d/%m/%y %H:%M:%S")
+
+        # Create the Student instance
+        new_student = Student(
+            name=username.strip().capitalize(),
+            email=email.strip(),
+            dob=dob,
+            phone=phone,
+            institute=inst.strip().capitalize(),
+            password=generate_password_hash(password),
+            date_created=date_created
+        )
+
+        # Add the new student to the session and commit
+        db.session.add(new_student)
+        db.session.commit()
+
+        flash("Registered successfully!", "success")
+        return redirect("/")
 
     else:
-        if session.get("user_id") is None:
-            return render_template("signup_student.html")
-        else:
+        # If user is already logged in, redirect to home
+        if session.get("user_id"):
             return redirect("/")
-    
+        else:
+            return render_template("signup_student.html")
+
+
+
 @auth_bp.route("/notyours")
 def sendrr():
     if session.get("user_id") is None:
