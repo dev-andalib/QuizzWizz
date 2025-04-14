@@ -1,18 +1,19 @@
 from flask import Flask
 from flask_session import Session
-from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
 from controllers.index import index_bp
 from controllers.auth import auth_bp
+from config import Config
 
+
+
+db = SQLAlchemy()  
 def create_app():
     app = Flask(__name__)
-
-    # Configurations
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://andalib:23hellboundFRENZY@localhost/quizwizz'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    # Initialize the db object with the app
+    
+    app.config.from_object(Config)
     db.init_app(app)
+    
 
     # App config for session
     app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -26,9 +27,6 @@ def create_app():
     # Register Blueprints
     app.register_blueprint(index_bp)
     app.register_blueprint(auth_bp)
-
-    # Migrate config
-    migrate = Migrate(app, db)
 
     return app
 

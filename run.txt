@@ -5,6 +5,6 @@ flask run
 
 
 # database upgrade in terminal
-flask db init  #only once
-flask db migrate -m "your message"
-flask db upgrade 
+alembic init migrations  #only once
+alembic revision --autogenerate -m "update message"
+alembic upgrade head

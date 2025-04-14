@@ -3,14 +3,14 @@ from datetime import datetime
 from flask import  flash,  Blueprint,  redirect, render_template, session, request
 from werkzeug.security import check_password_hash, generate_password_hash
 from extra import check_email, send_error, apology
-from app import app
+
 
 
 auth_bp = Blueprint('auth_bp', __name__)
 
 
 
-@app.route("/login", methods=["GET", "POST"])
+@auth_bp.route("/login", methods=["GET", "POST"])
 def login():
 
     if request.method == "POST":
@@ -61,7 +61,7 @@ def login():
 
 
 
-@app.route("/logout")
+@auth_bp.route("/logout")
 def logout():
     """Log user out"""
     session.clear()
@@ -71,7 +71,7 @@ def logout():
 
 
 
-@app.route("/signup_teacher", methods=["GET", "POST"])
+@auth_bp.route("/signup_teacher", methods=["GET", "POST"])
 def signup_t():
     if request.method=="POST":
         username = request.form.get("name")
@@ -126,7 +126,7 @@ def signup_t():
             return redirect("/")
 
 
-@app.route("/signup_student", methods=["GET", "POST"])
+@auth_bp.route("/signup_student", methods=["GET", "POST"])
 def signup_s():
     if request.method=="POST":
         # Validate the user data
@@ -185,7 +185,7 @@ def signup_s():
         else:
             return redirect("/")
     
-@app.route("/notyours")
+@auth_bp.route("/notyours")
 def sendrr():
     if session.get("user_id") is None:
         return redirect("/login")
@@ -200,7 +200,7 @@ def sendrr():
 
 
 
-@app.route("/choose")
+@auth_bp.route("/choose")
 def choose():
     if session.get("user_id") is None:
         return render_template("choose.html")
