@@ -2,7 +2,7 @@ from random import randint
 from datetime import datetime
 from flask import  flash,  Blueprint, jsonify,  redirect, render_template, session, request
 from werkzeug.security import check_password_hash, generate_password_hash
-from extra import check_email, send_error, apology
+from extra import check_email, apology
 from models import db, Student, Teacher
 
 

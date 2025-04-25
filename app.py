@@ -8,6 +8,8 @@ from models import db
 
 from controllers.index import index_bp
 from controllers.auth import auth_bp
+from controllers.student import st_bp
+from controllers.teacher import ta_bp
 
 
 
@@ -38,4 +40,6 @@ def create_app():
 
     app.register_blueprint(index_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(st_bp)
+    app.register_blueprint(ta_bp)
     return app
