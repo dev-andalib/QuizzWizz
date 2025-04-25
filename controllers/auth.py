@@ -1,6 +1,6 @@
 from random import randint
 from datetime import datetime
-from flask import  flash,  Blueprint,  redirect, render_template, session, request
+from flask import  flash,  Blueprint, jsonify,  redirect, render_template, session, request
 from werkzeug.security import check_password_hash, generate_password_hash
 from extra import check_email, send_error, apology
 from models import db, Student, Teacher
@@ -55,22 +55,14 @@ def login():
         else:
             return redirect("/")
 
-
-
-
 @auth_bp.route("/logout")
 def logout():
     """Log user out"""
     session.clear()
     return redirect("/")
 
-
-
-
-
 def send_error(message):
-    flash(message, 'error')
-    return render_template("signup_teacher.html")
+    return jsonify(error=message)
 
 @auth_bp.route("/signup_teacher", methods=["GET", "POST"])
 def signup_t():
@@ -139,19 +131,16 @@ def signup_t():
         new_teacher.ta_init = teacher_init
         db.session.commit()  # Save updated init
 
-        flash("Registered successfully!", "success")
-        return redirect("/")
+        
+        return jsonify(error="Registered..!")
 
     else:
         if session.get("user_id"):
             return redirect("/")
         return render_template("signup_teacher.html")
 
-
-
 def send_error(message):
-    flash(message, 'error')
-    return render_template("signup_student.html")
+    return jsonify(error=message)
 
 @auth_bp.route("/signup_student", methods=["GET", "POST"])
 def signup_s():
@@ -219,8 +208,7 @@ def signup_s():
         db.session.add(new_student)
         db.session.commit()
 
-        flash("Registered successfully!", "success")
-        return redirect("/")
+        return jsonify(error="Registered..!")
 
     else:
         # If user is already logged in, redirect to home
@@ -228,8 +216,6 @@ def signup_s():
             return redirect("/")
         else:
             return render_template("signup_student.html")
-
-
 
 @auth_bp.route("/notyours")
 def sendrr():
@@ -242,10 +228,6 @@ def sendrr():
     elif usr=="TA":
         return apology("You're not a teacher")
     
-
-
-
-
 @auth_bp.route("/choose")
 def choose():
     if session.get("user_id") is None:
