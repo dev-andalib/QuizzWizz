@@ -17,7 +17,6 @@ def login():
         password = request.form.get("password")
         role = request.form.get("role")
 
-        
         if not email:
             flash("Where's the email..?", 'error')
             return render_template("login.html")
@@ -31,22 +30,21 @@ def login():
             flash("Invalid role.", 'error')
             return render_template("login.html")
 
-        
         if role == "student":
-            student = Student.query.filter_by(email=email).first()
-            if not student or not check_password_hash(student.password, password):
+            student = Student.query.filter_by(st_email=email.strip()).first()
+            if not student or not check_password_hash(student.st_password, password):
                 flash("Invalid user or password.", 'error')
                 return render_template("login.html")
-            
-            session["user_id"] = "ST" + str(student.id)
+
+            session["user_id"] = "ST" + str(student.st_id)
 
         elif role == "teacher":
-            teacher = Teacher.query.filter_by(email=email).first()
-            if not teacher or not check_password_hash(teacher.password, password):
+            teacher = Teacher.query.filter_by(ta_email=email.strip()).first()
+            if not teacher or not check_password_hash(teacher.ta_password, password):
                 flash("Invalid user or password.", 'error')
                 return render_template("login.html")
-            
-            session["user_id"] = "TA" + str(teacher.id)
+
+            session["user_id"] = "TA" + str(teacher.ta_id)
 
         flash("Login successful!")
         return redirect("/")
