@@ -11,6 +11,8 @@ class Subject(db.Model):
 
     quizzes = db.relationship('Quiz', backref='subject', lazy=True)
 
+
+
 # Quiz Model
 class Quiz(db.Model):
     __tablename__ = 'quiz'
@@ -29,6 +31,20 @@ class Quiz(db.Model):
 
     questions = db.relationship('Question', backref='quiz', lazy=True)
     quiz_histories = db.relationship('QuizHistory', backref='quiz', lazy=True)
+
+
+
+class QuizHistory(db.Model):
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.qid', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.st_id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+    obtained_marks = db.Column(db.Integer, nullable=False)
+    feedback = db.Column(db.String(255))
+    quiz_date = db.Column(db.DateTime, nullable=False)
+
+
+
+
+
 
 # Question Model
 class Question(db.Model):

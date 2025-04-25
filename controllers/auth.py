@@ -196,7 +196,8 @@ def signup_s():
             return send_error("Passwords don't match..!")
 
         # Check if email already exists
-        student = Student.query.filter_by(email=email.strip()).first()
+        student = Student.query.filter_by(st_email=email.strip()).first()
+
         if student:
             return send_error("Email already exists..!")
 
@@ -205,13 +206,13 @@ def signup_s():
 
         # Create the Student instance
         new_student = Student(
-            name=username.strip().capitalize(),
-            email=email.strip(),
-            dob=dob,
-            phone=phone,
-            institute=inst.strip().capitalize(),
-            password=generate_password_hash(password),
-            date_created=date_created
+    st_name=username.strip().capitalize(),
+    st_email=email.strip(),
+    st_dob=dob,
+    st_phone=phone,
+    st_current_inst=inst.strip().capitalize(),
+    st_password=generate_password_hash(password),
+    st_date_created=date_created
         )
 
         # Add the new student to the session and commit

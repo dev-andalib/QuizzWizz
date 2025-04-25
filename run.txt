@@ -6,5 +6,5 @@ flask run
 
 
 # database upgrade in terminal
-alembic revision --autogenerate -m "update message"
+alembic revision --autogenerate -m "migration"
 alembic upgrade head
