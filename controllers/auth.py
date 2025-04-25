@@ -93,60 +93,62 @@ def signup_t():
 
         if not dob:
             return send_error("Must provide date of birth..!")
-        
+
         if not email:
             return send_error("Must provide email..!")
-        
-        if not check_email(email.strip()):  # Assuming check_email is a custom function for email validation
+
+        if not check_email(email.strip()):
             return send_error("Invalid Email")
-        
+
         if not password:
             return send_error("Must provide password..!")
-        
+
         if len(password) < 8 or len(password) > 20:
             return send_error("Password must be between 8 and 20 characters.")
-        
+
         if not confirm or confirm != password:
             return send_error("Passwords don't match..!")
 
         # Check if email already exists
-        teacher = Teacher.query.filter_by(email=email.strip()).first()
+        teacher = Teacher.query.filter_by(ta_email=email.strip()).first()
         if teacher:
             return send_error("Email already exists..!")
 
-        # Generate unique teacher initialization value
-        # You can generate the teacher's unique ID based on some pattern as needed
-        max_teacher_id = db.session.query(db.func.max(Teacher.id)).scalar()  # Get the max teacher ID
-        teacher_init = (username[randint(0, len(username)-1)] + username[randint(0, len(username)-1)] + 
-                        username[randint(0, len(username)-1)] + str(max_teacher_id + 20230)).upper()
-
-        # Get the current timestamp for account creation
+        # Get timestamp for account creation
         date_created = datetime.now().strftime("%d/%m/%y %H:%M:%S")
 
-        # Create new teacher record
+        # Create new teacher record (without init for now)
         new_teacher = Teacher(
-            name=username.strip().capitalize(),
-            email=email.strip(),
-            dob=dob,
-            phone=phone,
-            init=teacher_init,
-            password=password,
-            date_created=date_created
+            ta_name=username.strip().capitalize(),
+            ta_email=email.strip(),
+            ta_dob=dob,
+            ta_phone=phone,
+            ta_password=generate_password_hash(password),
+            ta_date_created=date_created
         )
-        
-        # Add and commit to the database
+
         db.session.add(new_teacher)
-        db.session.commit()
+        db.session.commit()  # So that new_teacher.ta_id is generated
+
+        # Now generate a unique init using the generated ta_id
+        teacher_init = (
+            username[randint(0, len(username) - 1)] +
+            username[randint(0, len(username) - 1)] +
+            username[randint(0, len(username) - 1)] +
+            str(new_teacher.ta_id + 20230)
+        ).upper()
+
+        new_teacher.ta_init = teacher_init
+        db.session.commit()  # Save updated init
 
         flash("Registered successfully!", "success")
         return redirect("/")
 
     else:
-        # If user is already logged in, redirect to home
         if session.get("user_id"):
             return redirect("/")
-        else:
-            return render_template("signup_teacher.html")
+        return render_template("signup_teacher.html")
+
 
 
 def send_error(message):
